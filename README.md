@@ -322,3 +322,18 @@ Unlike a pre-formatted code block, a code span indicates code within a
 normal paragraph. For example:
 
 Use the `printf()` function.
+
+
+
+* a
+* b
+  * c
+    * d
+      * e
+
+
+1. a
+1. b
+    1. c 
+        1. d
+            1. e
