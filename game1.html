@@ -10,8 +10,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #87CEFA;
             margin: 0;
+            background: linear-gradient(#87CEFA, #f0f0f0);
             font-family: Arial, sans-serif;
         }
         #gameArea {
@@ -28,22 +28,21 @@
             left: 180px;
             width: 40px;
             height: 80px;
-            background-image: url('https://i.imgur.com/ZHk1W1P.png');
-            background-size: cover;
-        }
-        .obstacle, .donut {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: yellow;
+            background-image: url('https://i.imgur.com/ZHk1W1P.png'); /* F1 Car Image */
             background-size: cover;
         }
         .obstacle {
-            background-color: red;
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('https://i.imgur.com/AxsK3U6.png'); /* Obstacle Image */
+            background-size: cover;
         }
         .donut {
-            background-image: url('https://i.imgur.com/TW4EyX0.png');
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('https://i.imgur.com/TW4EyX0.png'); /* Donut Image */
             background-size: cover;
         }
         @keyframes move {
