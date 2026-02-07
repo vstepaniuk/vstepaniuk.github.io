@@ -1,26 +1,88 @@
-<div id="gameArea">
-    <div id="basket"></div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Falling Ball</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        #gameArea {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            border: 2px solid #333;
+            overflow: hidden;
+            background-color: #fff;
+        }
+        #basket {
+            position: absolute;
+            bottom: 0;
+            left: 175px;
+            width: 50px;
+            height: 20px;
+            background-color: #008CBA;
+        }
+        .ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: red;
+            animation: fall 2s linear infinite;
+        }
+        @keyframes fall {
+            0% { top: 0; }
+            100% { top: 600px; }
+        }
+    </style>
+</head>
+<body>
 
-<script>
-    let score = 0;
+    <div id="gameArea">
+        <div id="basket"></div>
+    </div>
 
-    function createBall() {
-        const ball = document.createElement('div');
-        ball.classList.add('ball');
-        ball.style.left = Math.random() * 380 + 'px'; // Random position
-        document.getElementById('gameArea').appendChild(ball);
+    <script>
+        let score = 0;
 
-        const fallInterval = setInterval(() => {
-            ball.style.top = ball.offsetTop + 5 + 'px';
-            if (ball.offsetTop > 600) {
-                clearInterval(fallInterval);
-                ball.remove();
-            }
-            if (ball.offsetTop + 20 >= 580 && 
-                ball.offsetLeft + 20 >= document.getElementById('basket').offsetLeft &&
-                ball.offsetLeft <= document.getElementById('basket').offsetLeft + 50) {
-                clearInterval(fallInterval);
-                ball.remove();
-                score++;
-                alert('Score: '
+        function createBall() {
+            const ball = document.createElement('div');
+            ball.classList.add('ball');
+            ball.style.left = Math.random() * 380 + 'px'; // Random position
+            document.getElementById('gameArea').appendChild(ball);
+
+            const fallInterval = setInterval(() => {
+                ball.style.top = ball.offsetTop + 5 + 'px';
+                if (ball.offsetTop > 600) {
+                    clearInterval(fallInterval);
+                    ball.remove();
+                }
+                if (ball.offsetTop + 20 >= 580 && 
+                    ball.offsetLeft + 20 >= document.getElementById('basket').offsetLeft &&
+                    ball.offsetLeft <= document.getElementById('basket').offsetLeft + 50) {
+                    clearInterval(fallInterval);
+                    ball.remove();
+                    score++;
+                    alert('Score: ' + score);
+                }
+            }, 100);
+        }
+
+        document.addEventListener('mousemove', (event) => {
+            const basket = document.getElementById('basket');
+            const gameArea = document.getElementById('gameArea');
+            const offsetX = event.clientX - gameArea.offsetLeft;
+            basket.style.left = Math.max(0, Math.min(350, offsetX - 25)) + 'px'; // Bound within game area
+        });
+
+        setInterval(createBall, 2000); // Create a new ball every 2 seconds
+    </script>
+</body>
+</html>
