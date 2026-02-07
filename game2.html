@@ -3,93 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Rush Mobile</title>
+    <title>Neon Rush V2</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #111;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            touch-action: none; /* Critical for mobile to prevent scrolling */
+            margin: 0; padding: 0; overflow: hidden;
+            background-color: #050505;
+            font-family: sans-serif;
+            touch-action: none;
         }
-
         #gameCanvas {
             display: block;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
         }
-
         #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Let touches pass through to canvas */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
             padding: 20px;
         }
-
         #score-board {
-            color: #fff;
-            font-size: 24px;
-            font-weight: 800;
+            color: #fff; font-size: 24px; font-weight: 800;
             text-shadow: 0 0 10px #0ff;
         }
-
         #start-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto; /* Re-enable clicks for the button */
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: auto;
+            z-index: 100;
+            transition: opacity 0.3s;
         }
-
         h1 {
-            color: #f0f;
-            font-size: 40px;
-            text-transform: uppercase;
-            text-shadow: 2px 2px 0px #0ff;
-            margin: 0 0 20px 0;
-            font-style: italic;
+            color: #f0f; font-size: 40px; margin: 0 0 10px 0;
+            text-shadow: 2px 2px #0ff; font-style: italic;
         }
-
         button {
             background: linear-gradient(45deg, #f0f, #0ff);
-            border: none;
-            padding: 15px 40px;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.4);
-            transition: transform 0.1s;
+            border: none; padding: 20px 50px;
+            color: white; font-size: 20px; font-weight: bold;
+            border-radius: 50px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+            margin-top: 20px;
         }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -101,12 +60,17 @@
     </div>
 
     <div id="start-screen">
-        <h1>Neon Rush</h1>
-        <p style="color: #ccc; margin-bottom: 30px;">Drag to steer. Dodge Red. Hit Yellow.</p>
+        <h1>NEON RUSH</h1>
+        <p style="color: #ddd;">Drag Left/Right to Steer</p>
         <button id="start-btn">START ENGINE</button>
     </div>
 
     <script>
+        // Error trapping for mobile
+        window.onerror = function(msg, url, line) {
+            alert("Game Error: " + msg + "\nLine: " + line);
+        };
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startScreen = document.getElementById('start-screen');
@@ -118,30 +82,24 @@
         let score = 0;
         let gameSpeed = 5;
         let lastTime = 0;
+        let animationId = null;
 
         // Dimensions
-        let width, height;
+        let width = window.innerWidth;
+        let height = window.innerHeight;
 
         function resize() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            // Keep player within bounds if resized
-            if(player) player.x = Math.min(Math.max(player.x, player.w/2), width - player.w/2);
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // Colors
-        const C_PLAYER = '#0ff'; // Cyan
-        const C_ENEMY = '#f05';  // Red/Pink
-        const C_COIN = '#ff0';   // Yellow
-        const C_ROAD = '#222';
-        const C_LINE = '#333';
-
-        // Entities
-        const player = { x: width / 2, y: 0, w: 50, h: 80, color: C_PLAYER };
+        // Game Objects
+        // We define player structure but set X/Y in resetGame
+        const player = { x: 0, y: 0, w: 50, h: 80, color: '#0ff' };
         let obstacles = [];
         let particles = [];
         let roadOffset = 0;
@@ -149,127 +107,154 @@
         // Input Handling
         let touchX = null;
 
+        // Touch
         document.addEventListener('touchstart', (e) => {
-            if (!isPlaying) return;
             touchX = e.touches[0].clientX;
         }, { passive: false });
 
         document.addEventListener('touchmove', (e) => {
             if (!isPlaying) return;
-            e.preventDefault(); // Prevent scrolling
-            const currentTouchX = e.touches[0].clientX;
-            const diff = currentTouchX - touchX;
-            player.x += diff * 1.5; // Sensitivity
-            touchX = currentTouchX;
-
-            // Boundaries
-            if (player.x < player.w / 2) player.x = player.w / 2;
-            if (player.x > width - player.w / 2) player.x = width - player.w / 2;
+            e.preventDefault();
+            const currentX = e.touches[0].clientX;
+            const diff = currentX - touchX;
+            player.x += diff * 1.5;
+            touchX = currentX;
+            clampPlayer();
         }, { passive: false });
-        
-        // Mouse support for desktop testing
-        let isMouseDown = false;
+
+        // Mouse (for testing)
+        let isDragging = false;
         document.addEventListener('mousedown', (e) => {
-            if(!isPlaying) return;
-            isMouseDown = true;
+            isDragging = true;
             touchX = e.clientX;
         });
         document.addEventListener('mousemove', (e) => {
-            if(!isPlaying || !isMouseDown) return;
+            if (!isPlaying || !isDragging) return;
             const diff = e.clientX - touchX;
             player.x += diff;
             touchX = e.clientX;
-            if (player.x < player.w / 2) player.x = player.w / 2;
-            if (player.x > width - player.w / 2) player.x = width - player.w / 2;
+            clampPlayer();
         });
-        document.addEventListener('mouseup', () => isMouseDown = false);
+        document.addEventListener('mouseup', () => isDragging = false);
 
+        function clampPlayer() {
+            if (player.x < player.w/2) player.x = player.w/2;
+            if (player.x > width - player.w/2) player.x = width - player.w/2;
+        }
 
-        // Particle System
-        function createParticles(x, y, color, count = 10) {
-            for (let i = 0; i < count; i++) {
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
                 particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    life: 1.0,
-                    color: color
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    life: 1.0, color: color
                 });
             }
         }
 
-        function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.05;
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-        }
-
-        function drawParticles() {
-            particles.forEach(p => {
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.globalAlpha = 1.0;
-        }
-
-        // Game Loop
-        function spawnObstacle() {
-            const size = 50 + Math.random() * 30;
-            const type = Math.random() > 0.8 ? 'coin' : 'enemy'; // 20% chance for coin
-            obstacles.push({
-                x: Math.random() * (width - size) + size / 2,
-                y: -100,
-                w: type === 'coin' ? 40 : size,
-                h: type === 'coin' ? 40 : size,
-                type: type,
-                active: true
-            });
-        }
-
-        function gameOver() {
-            isPlaying = false;
-            createParticles(player.x, player.y, '#fff', 50); // Explosion
-            startScreen.classList.remove('hidden');
-            document.querySelector('h1').innerText = "CRASHED!";
-            startBtn.innerText = "TRY AGAIN";
-        }
-
         function update(dt) {
-            // Speed progression
-            gameSpeed += 0.001;
-            roadOffset = (roadOffset + gameSpeed) % 40;
-
-            // Player position reset (Y stays fixed near bottom)
-            player.y = height - 150;
-
-            // Spawn logic
-            if (Math.random() < 0.02 + (score * 0.0001)) {
-                spawnObstacle();
+            gameSpeed += 0.005; // Acceleration
+            roadOffset = (roadOffset + gameSpeed) % 60;
+            
+            // Spawn
+            if (Math.random() < 0.02 + (score * 0.00005)) {
+                let type = Math.random() > 0.8 ? 'coin' : 'enemy';
+                let size = type === 'coin' ? 30 : 60;
+                obstacles.push({
+                    x: Math.random() * (width - size) + size/2,
+                    y: -100,
+                    w: size, h: size,
+                    type: type, active: true
+                });
             }
 
-            // Update obstacles
+            // Move Obstacles
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let ob = obstacles[i];
                 ob.y += gameSpeed;
 
                 // Collision
-                // Simple AABB collision
                 if (ob.active &&
-                    player.x - player.w / 2 < ob.x + ob.w / 2 &&
-                    player.x + player.w / 2 > ob.x - ob.w / 2 &&
-                    player.y - player.h / 2 < ob.y + ob.h / 2 &&
-                    player.y + player.h / 2 > ob.y - ob.h / 2) {
+                    Math.abs(player.x - ob.x) < (player.w/2 + ob.w/2) &&
+                    Math.abs(player.y - ob.y) < (player.h/2 + ob.h/2)) {
                     
                     if (ob.type === 'enemy') {
                         gameOver();
                     } else {
-                        // Collect coin
-                        score
+                        score += 100;
+                        createParticles(ob.x, ob.y, '#ff0');
+                        ob.active = false;
+                    }
+                }
+
+                if (ob.y > height + 100) obstacles.splice(i, 1);
+            }
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= 0.05;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+            
+            scoreEl.innerText = "SCORE: " + Math.floor(score);
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid / Road
+            ctx.strokeStyle = '#f0f';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.3;
+            
+            // Horizon line
+            let horizon = height; 
+            
+            // Moving horizontal lines
+            ctx.beginPath();
+            for(let y = roadOffset; y < height; y += 60) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            // Perspective lines
+            ctx.beginPath();
+            let cx = width / 2;
+            for(let i = -5; i <= 5; i++) {
+                let x = cx + (i * 150);
+                ctx.moveTo(x, 0);
+                ctx.lineTo(cx + (i * 400), height);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            // Player
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = player.color;
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - player.h/2);
+            ctx.lineTo(player.x - player.w/2, player.y + player.h/2);
+            ctx.lineTo(player.x + player.w/2, player.y + player.h/2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Obstacles
+            obstacles.forEach(ob => {
+                if (!ob.active) return;
+                ctx.shadowBlur = 10;
+                if (ob.type === 'enemy') {
+                    ctx.fillStyle = '#f04';
+                    ctx.shadowColor = '#f04';
+                    ctx.fillRect(ob.x - ob.w/2, ob.y - ob.h/2, ob.w, ob.h);
+                } else {
+                    ctx.fillStyle = '#ff0';
+                    ctx.shadowColor = '#ff0';
+                    ctx.beginPath();
+                    ctx.arc(ob.x, ob.y, ob.w/2,
