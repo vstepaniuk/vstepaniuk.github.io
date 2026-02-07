@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catch the Falling Ball</title>
+    <title>Funny F1 Racing Game</title>
     <style>
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #87CEFA;
             margin: 0;
+            font-family: Arial, sans-serif;
         }
         #gameArea {
             position: relative;
@@ -21,67 +22,115 @@
             overflow: hidden;
             background-color: #fff;
         }
-        #basket {
+        #car {
             position: absolute;
-            bottom: 0;
-            left: 175px;
-            width: 50px;
-            height: 20px;
-            background-color: #008CBA;
+            bottom: 10px;
+            left: 180px;
+            width: 40px;
+            height: 80px;
+            background-image: url('https://i.imgur.com/ZHk1W1P.png');
+            background-size: cover;
         }
-        .ball {
+        .obstacle, .donut {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background-color: red;
-            animation: fall 2s linear infinite;
+            background-color: yellow;
+            background-size: cover;
         }
-        @keyframes fall {
-            0% { top: 0; }
-            100% { top: 600px; }
+        .obstacle {
+            background-color: red;
+        }
+        .donut {
+            background-image: url('https://i.imgur.com/TW4EyX0.png');
+            background-size: cover;
+        }
+        @keyframes move {
+            from {top: -40px;}
+            to {top: 600px;}
         }
     </style>
 </head>
 <body>
 
     <div id="gameArea">
-        <div id="basket"></div>
+        <div id="car"></div>
     </div>
 
     <script>
         let score = 0;
+        let gameRunning = true;
+        const gameArea = document.getElementById('gameArea');
 
-        function createBall() {
-            const ball = document.createElement('div');
-            ball.classList.add('ball');
-            ball.style.left = Math.random() * 380 + 'px'; // Random position
-            document.getElementById('gameArea').appendChild(ball);
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            obstacle.style.left = Math.random() * (gameArea.clientWidth - 40) + 'px';
+            gameArea.appendChild(obstacle);
+            moveObstacle(obstacle);
+        }
 
-            const fallInterval = setInterval(() => {
-                ball.style.top = ball.offsetTop + 5 + 'px';
-                if (ball.offsetTop > 600) {
-                    clearInterval(fallInterval);
-                    ball.remove();
+        function createDonut() {
+            const donut = document.createElement('div');
+            donut.classList.add('donut');
+            donut.style.left = Math.random() * (gameArea.clientWidth - 40) + 'px';
+            gameArea.appendChild(donut);
+            moveDonut(donut);
+        }
+
+        function moveObstacle(obstacle) {
+            obstacle.style.animation = 'move 2s linear infinite';
+            obstacle.addEventListener('animationiteration', () => {
+                if (gameRunning) {
+                    obstacle.remove();
+                    createObstacle();
                 }
-                if (ball.offsetTop + 20 >= 580 && 
-                    ball.offsetLeft + 20 >= document.getElementById('basket').offsetLeft &&
-                    ball.offsetLeft <= document.getElementById('basket').offsetLeft + 50) {
-                    clearInterval(fallInterval);
-                    ball.remove();
+            });
+
+            const checkCollision = setInterval(() => {
+                if (isColliding(car, obstacle)) {
+                    clearInterval(checkCollision);
+                    gameRunning = false;
+                    alert('Game Over! Score: ' + score);
+                    location.reload();
+                }
+            }, 100);
+        }
+
+        function moveDonut(donut) {
+            donut.style.animation = 'move 2s linear infinite';
+            donut.addEventListener('animationiteration', () => {
+                donut.remove();
+                createDonut();
+            });
+            
+            const checkCollision = setInterval(() => {
+                if (isColliding(car, donut)) {
                     score++;
+                    donut.remove();
                     alert('Score: ' + score);
                 }
             }, 100);
         }
 
+        function isColliding(car, item) {
+            const carRect = car.getBoundingClientRect();
+            const itemRect = item.getBoundingClientRect();
+            return !(carRect.right < itemRect.left || 
+                     carRect.left > itemRect.right || 
+                     carRect.bottom < itemRect.top || 
+                     carRect.top > itemRect.bottom);
+        }
+
+        const car = document.getElementById('car');
         document.addEventListener('touchmove', (event) => {
-            const basket = document.getElementById('basket');
-            const touchLocation = event.touches[0].clientX - document.getElementById('gameArea').offsetLeft;
-            basket.style.left = Math.max(0, Math.min(350, touchLocation - 25)) + 'px'; // Bound within game area
+            const touchLocation = event.touches[0].clientX - gameArea.offsetLeft;
+            car.style.left = Math.max(0, Math.min(gameArea.clientWidth - 40, touchLocation - 20)) + 'px';
         });
 
-        setInterval(createBall, 2000); // Create a new ball every 2 seconds
+        setInterval(createObstacle, 2000); // Create an obstacle every 2 seconds
+        setInterval(createDonut, 3000); // Create a donut every 3 seconds
     </script>
 </body>
 </html>
