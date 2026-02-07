@@ -1,0 +1,26 @@
+<div id="gameArea">
+    <div id="basket"></div>
+</div>
+
+<script>
+    let score = 0;
+
+    function createBall() {
+        const ball = document.createElement('div');
+        ball.classList.add('ball');
+        ball.style.left = Math.random() * 380 + 'px'; // Random position
+        document.getElementById('gameArea').appendChild(ball);
+
+        const fallInterval = setInterval(() => {
+            ball.style.top = ball.offsetTop + 5 + 'px';
+            if (ball.offsetTop > 600) {
+                clearInterval(fallInterval);
+                ball.remove();
+            }
+            if (ball.offsetTop + 20 >= 580 && 
+                ball.offsetLeft + 20 >= document.getElementById('basket').offsetLeft &&
+                ball.offsetLeft <= document.getElementById('basket').offsetLeft + 50) {
+                clearInterval(fallInterval);
+                ball.remove();
+                score++;
+                alert('Score: '
