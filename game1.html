@@ -75,11 +75,10 @@
             }, 100);
         }
 
-        document.addEventListener('mousemove', (event) => {
+        document.addEventListener('touchmove', (event) => {
             const basket = document.getElementById('basket');
-            const gameArea = document.getElementById('gameArea');
-            const offsetX = event.clientX - gameArea.offsetLeft;
-            basket.style.left = Math.max(0, Math.min(350, offsetX - 25)) + 'px'; // Bound within game area
+            const touchLocation = event.touches[0].clientX - document.getElementById('gameArea').offsetLeft;
+            basket.style.left = Math.max(0, Math.min(350, touchLocation - 25)) + 'px'; // Bound within game area
         });
 
         setInterval(createBall, 2000); // Create a new ball every 2 seconds
